@@ -1,0 +1,19 @@
+{
+  "name": "aucrypto_transaction",
+  "version": "1.0.0",
+  "description": "AUCRYPTO Internal transaction server communication to a Postgres cluster to ensure ACID compliance. The transaction server acts as the middleman for new transactions and blocks from digital currencies.",
+  "main": "aucrypto_transaction.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liamgib/AUCRYPTO_TRANSACTION.git"
+  },
+  "author": "Liam Gibson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/liamgib/AUCRYPTO_TRANSACTION/issues"
+  },
+  "homepage": "https://github.com/liamgib/AUCRYPTO_TRANSACTION#readme"
+}

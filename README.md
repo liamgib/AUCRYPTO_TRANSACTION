@@ -1,1 +1,2 @@
 # AUCRYPTO_TRANSACTION
+AUCRYPTO Internal transaction server communication to a Postgres cluster to ensure ACID compliance. The transaction server acts as the middleman for new transactions and blocks from digital currencies.
