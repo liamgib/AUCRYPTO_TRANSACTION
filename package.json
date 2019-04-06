@@ -15,5 +15,11 @@
   "bugs": {
     "url": "https://github.com/liamgib/AUCRYPTO_TRANSACTION/issues"
   },
-  "homepage": "https://github.com/liamgib/AUCRYPTO_TRANSACTION#readme"
+  "homepage": "https://github.com/liamgib/AUCRYPTO_TRANSACTION#readme",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4",
+    "fconfig_handler": "^1.0.8",
+    "pg": "^7.9.0"
+  }
 }
