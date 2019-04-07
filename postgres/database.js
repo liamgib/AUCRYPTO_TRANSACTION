@@ -1,3 +1,6 @@
+const crypto = require("crypto");
+const key = "d6733cd7h4559bff6a935408dbdb2620";
+let iv = crypto.randomBytes(16);
 const { Pool, Client } = require('pg')
 const pool = new Pool({
     user: 'postgres',
@@ -5,11 +8,6 @@ const pool = new Pool({
     database: 'aucrypto',
     password: 'hf3hdi12fd_',
     port: 5432,
-});
-
-pool.on('error', (err, client) => {
-    console.error('Unexpected error on idle client', err)
-    process.exit(-1)
 });
 
 
@@ -36,9 +34,63 @@ module.exports.doesTableExist = function(table){
  */
 module.exports.createUserTable = function createUserTable(){
     return promise = new Promise(function(resolve, reject) {
-        pool.query('CREATE TABLE users(user_id serial PRIMARY KEY,username VARCHAR (50) UNIQUE NOT NULL,password VARCHAR (50) NOT NULL, email VARCHAR (355) UNIQUE NOT NULL, created_on TIMESTAMP NOT NULL,last_login TIMESTAMP);', (err, res) => {
+        pool.query("CREATE TABLE users(user_id serial PRIMARY KEY, email VARCHAR (355) UNIQUE NOT NULL, password VARCHAR (50) NOT NULL, iv VARCHAR (50) NOT NULL, verifykey VARCHAR(45) NOT NULL, verifypin integer NOT NULL, verified VARCHAR(20) DEFAULT 'N', created_on TIMESTAMP NOT NULL, last_login TIMESTAMP);", (err, res) => {
             if (err) return resolve(false);
             return true;
         });
     });
 }
+
+
+//      -=- User functions -=-
+
+/**
+ * Create user with email and password. The password is encrypted.
+ * @param {String} email The email for the associated account.
+ * @param {String} password The password for the account.
+ * @returns {Promise} Returns a promise which resolves to false if a error occured or to a user_id.
+ */
+module.exports.createUser = async (email, password) =>{
+    password = module.exports.encrypt(password);
+    const client = await pool.connect()
+    try {
+        await client.query('BEGIN')
+        const { rows } = await client.query("INSERT INTO users(email, password, iv, verifykey, verifypin, created_on, last_login) VALUES($1, $2, $3, $4, $5, now(), now()) RETURNING user_id", [email, password.encryptedData, password.iv, crypto.randomBytes(20).toString("hex"), Math.floor(1000 + Math.random() * 9000)]);
+        await client.query('COMMIT');
+        return rows[0].user_id;
+      } catch (e) {
+        await client.query('ROLLBACK')
+        return false;
+      } finally {
+        client.release();
+      }
+}
+
+/**
+ * Encrypt any information with a cipher.
+ * @param {String} text The text to encrypt.
+ * @returns {Object} Contains an object with .encryptedData (encrypted data) and .iv (assoiated iv)
+ */
+module.exports.encrypt = (text) => {
+    let cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    let biv = iv;
+    iv = crypto.randomBytes(16);
+    return { iv: biv.toString("hex"), encryptedData: encrypted.toString("hex") };
+}
+  
+/**
+ * Decrypts any information with a cipher.
+ * @param {Object} text Object with .encryptedData and .iv
+ * @returns {Object} Contains an object with .encrypted (encrypted data) and .iv (assoiated iv)
+ */
+module.exports.decrypt = (text) => {
+    let iv = Buffer.from(text.iv, "hex");
+    let encryptedText = Buffer.from(text.encryptedData, "hex");
+    let decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(key), iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+}
+  
