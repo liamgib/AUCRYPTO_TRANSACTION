@@ -47,7 +47,39 @@ module.exports.createUser = async (email, password) => {
 }
 
 module.exports.loginUser = async (email, password) => {
-
+    return promise = new Promise(async function(resolve, reject) {
+        const client = await pool.connect()
+        try {
+            await client.query('BEGIN')
+            const { rows } = await client.query("SELECT user_id, password, iv, verified, verifykey from users where email=$1 FOR UPDATE", [email]);
+            if(rows[0] === undefined || rows.length == 0 || rows == null){
+                await client.query('ROLLBACK');
+                resolve([false]);
+            }else{
+                let depass = { iv: rows[0].iv, encryptedData: rows[0].password};
+                depass = module.exports.decrypt(depass);
+                if (depass === password) {
+                    if(rows[0].verified === 'N'){
+                        await client.query('ROLLBACK');
+                        resolve([false, rows[0].verifykey]);
+                    }else{
+                        let session = crypto.randomBytes(16).toString("hex");
+                        //TODO: CREATION SESSION TABLE AND INSERT INTO TABLE.
+                        await client.query('COMMIT');
+                        resolve([true, session]);
+                    }
+                }else{
+                    await client.query('ROLLBACK');
+                    resolve([false]);
+                }
+            }
+        } catch (e) {
+        await client.query('ROLLBACK')
+        return (false);
+        } finally {
+        client.release();
+        }
+    });
 }
 
 /**

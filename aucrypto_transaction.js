@@ -16,7 +16,16 @@ app.listen(3000, async () => {
       
     }
   });
-  let user_id = await database.getUserDatabase().createUser('liamagibasaa', 'testing123');
-  console.log("A", user_id);
+
+  //let user_id = await database.getUserDatabase().createUser('liamagibasaa', 'testing123');
+  
+  /*
+  database.getUserDatabase().loginUser('liamagibasaa', 'testing123').then(result => {
+    let isLoggedIn = result[0]
+    let session_or_verifykey = result[1];
+    console.log("A", isLoggedIn, session_or_verifykey);
+  });
+  */
+
   console.log('AUCRYPTO - Transaction worker started → PORT 3000');
 });
