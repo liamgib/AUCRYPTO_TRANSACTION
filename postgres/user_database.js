@@ -1,38 +1,18 @@
 const crypto = require("crypto");
 const key = "d6733cd7h4559bff6a935408dbdb2620";
 let iv = crypto.randomBytes(16);
-const { Pool, Client } = require('pg')
-const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'aucrypto',
-    password: 'hf3hdi12fd_',
-    port: 5432,
-});
+let pool;
 
-
-//      -=- Table functions -=-
-
-/**
- * Checks to see if a table exists with the current database.
- * @param {String} table Table to check.
- * @returns {promise} Returns a promise, which resolves as true or false depending on the result. 
- */
-module.exports.doesTableExist = function(table){
-    return promise = new Promise(function(resolve, reject) {
-        pool.query('SELECT EXISTS (SELECT 1 FROM   information_schema.tables WHERE  table_schema = $1 AND table_name = $2);', ['public', table], (err, res) => {
-            if (err) return resolve(false);
-            return resolve(res.rows[0].exists);
-        });
-    });
+module.exports = function main(poola){
+    pool = poola;
+    return module.exports;
 }
-
 
 /**
  * Creates the user tables.
  * @returns {promise} Returns a promise, which resolves as true or false depending on the result. 
  */
-module.exports.createUserTable = function createUserTable(){
+module.exports.createUserTable = () => {
     return promise = new Promise(function(resolve, reject) {
         pool.query("CREATE TABLE users(user_id serial PRIMARY KEY, email VARCHAR (355) UNIQUE NOT NULL, password VARCHAR (50) NOT NULL, iv VARCHAR (50) NOT NULL, verifykey VARCHAR(45) NOT NULL, verifypin integer NOT NULL, verified VARCHAR(20) DEFAULT 'N', created_on TIMESTAMP NOT NULL, last_login TIMESTAMP);", (err, res) => {
             if (err) return resolve(false);
@@ -50,7 +30,7 @@ module.exports.createUserTable = function createUserTable(){
  * @param {String} password The password for the account.
  * @returns {Promise} Returns a promise which resolves to false if a error occured or to a user_id.
  */
-module.exports.createUser = async (email, password) =>{
+module.exports.createUser = async (email, password) => {
     password = module.exports.encrypt(password);
     const client = await pool.connect()
     try {
@@ -64,6 +44,10 @@ module.exports.createUser = async (email, password) =>{
       } finally {
         client.release();
       }
+}
+
+module.exports.loginUser = async (email, password) => {
+
 }
 
 /**
