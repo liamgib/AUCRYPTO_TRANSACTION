@@ -22,13 +22,13 @@ app.listen(3000, async () => {
     }
   });
 
-  database.getUserDatabase().createUser('liamagibasaa', 'testing123').then(user_id => {
+  await database.getUserDatabase().createUser('liamagibasaa', 'testing123').then(user_id => {
     console.log("A", user_id);
   });
   
   let verify_user = await database.getUserDatabase().userVerification('bd56b5cefb45d55b75c26fd0f90b5ec50d80cdaf', 8815);
   console.log("Verified: ", verify_user);
-  
+
   let session;
   await database.getUserDatabase().loginUser('liamagibasaa', 'testing123').then(result => {
     let isLoggedIn = result[0]
