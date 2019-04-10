@@ -10,18 +10,9 @@ app.get('/', (req, res) => {
 });
 
 app.listen(3000, async () => {
-  await database.doesTableExist('users').then(exists => {
-    if(!exists) {
-      database.getUserDatabase().createUserTable();
-    }
-  });
+  await database.setupUserDB();
 
-  await database.doesTableExist('session').then(exists => {
-    if(!exists) {
-      database.getUserDatabase().createSessionTable();
-    }
-  });
-
+  /*
   await database.getUserDatabase().createUser('liamagibasaa', 'testing123').then(user_id => {
     console.log("A", user_id);
   });
@@ -38,7 +29,7 @@ app.listen(3000, async () => {
     console.log("A", isLoggedIn, session_or_verifykey);
   });
   let is_session = await database.getUserDatabase().isSession(session);
-  console.log(session, is_session);
+  console.log(session, is_session);*/
   
 
 

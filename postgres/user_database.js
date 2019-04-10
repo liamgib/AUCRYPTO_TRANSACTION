@@ -74,15 +74,18 @@ module.exports.loginUser = async (email, password) => {
                 resolve([false]);
             }else{
                 bcrypt.compare(password, rows[0].password).then(async function(isValidated){
+
                     if (isValidated) {
                         if(rows[0].verified === 'N'){
                             await client.query('ROLLBACK');
                             resolve([false, rows[0].verifykey]);
                         }else{
-                            let session = crypto.randomBytes(16).toString("hex");
-                            await client.query("INSERT INTO session(session, user_id, created_on) VALUES ($1, $2, now())", [session, rows[0].user_id]);
-                            await client.query('COMMIT');
-                            resolve([true, session]);
+                            crypto.randomBytes(30, async function(err, buffer) {
+                                let session = buffer.toString('base64');
+                                await client.query("INSERT INTO session(session, user_id, created_on) VALUES ($1, $2, now())", [session, rows[0].user_id]);
+                                await client.query('COMMIT');
+                                resolve([true, session]);
+                            });
                         }
                     }else{
                         await client.query('ROLLBACK');

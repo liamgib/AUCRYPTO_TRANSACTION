@@ -34,3 +34,19 @@ module.exports.doesTableExist = (table) => {
 module.exports.getUserDatabase = () => {
     return user_database(pool);
 }
+
+
+//        ----- SETUP FUNCTIONS ----
+
+/**
+ * Check if session and users tables exists, if not create.
+ */
+module.exports.setupUserDB = () => {
+    module.exports.doesTableExist('users').then(exists => {
+        if(!exists) module.exports.getUserDatabase().createUserTable();
+        module.exports.doesTableExist('session').then(exists => {
+            if(!exists) module.exports.getUserDatabase().createSessionTable();
+            return true;
+        });
+    });
+}
