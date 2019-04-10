@@ -1,6 +1,5 @@
 const crypto = require("crypto");
-const key = "d6733cd7h4559bff6a935408dbdb2620";
-let iv = crypto.randomBytes(16);
+const bcrypt = require('bcrypt');
 let pool;
 
 module.exports = function main(poola){
@@ -14,7 +13,7 @@ module.exports = function main(poola){
  */
 module.exports.createUserTable = () => {
     return promise = new Promise(function(resolve, reject) {
-        pool.query("CREATE TABLE users(user_id serial PRIMARY KEY, email VARCHAR (355) UNIQUE NOT NULL, password VARCHAR (50) NOT NULL, iv VARCHAR (50) NOT NULL, verifykey VARCHAR(45) NOT NULL, verifypin integer NOT NULL, verified VARCHAR(20) DEFAULT 'N', created_on TIMESTAMP NOT NULL, last_login TIMESTAMP);", (err, res) => {
+        pool.query("CREATE TABLE users(user_id serial PRIMARY KEY, email VARCHAR (355) UNIQUE NOT NULL, password VARCHAR (60) NOT NULL, verifykey VARCHAR(45) NOT NULL, verifypin integer NOT NULL, verified VARCHAR(20) DEFAULT 'N', created_on TIMESTAMP NOT NULL, last_login TIMESTAMP);", (err, res) => {
             if (err) return resolve(false);
             return true;
         });
@@ -23,7 +22,7 @@ module.exports.createUserTable = () => {
 
 module.exports.createSessionTable = () => {
     return promise = new Promise(function(resolve, reject) {
-        pool.query("CREATE TABLE session(session VARCHAR(45) UNIQUE NOT NULL, user_id VARCHAR(45) NULL)", (err, res) => {
+        pool.query("CREATE TABLE session(session VARCHAR(45) UNIQUE NOT NULL, user_id VARCHAR(45) NULL, created_on TIMESTAMP NOT NULL)", (err, res) => {
             if (err) return resolve(false);
             return true;
         });
@@ -40,19 +39,22 @@ module.exports.createSessionTable = () => {
  * @returns {Promise} Returns a promise which resolves to false if a error occured or to a user_id.
  */
 module.exports.createUser = async (email, password) => {
-    password = module.exports.encrypt(password);
-    const client = await pool.connect()
-    try {
-        await client.query('BEGIN')
-        const { rows } = await client.query("INSERT INTO users(email, password, iv, verifykey, verifypin, created_on, last_login) VALUES($1, $2, $3, $4, $5, now(), now()) RETURNING user_id", [email, password.encryptedData, password.iv, crypto.randomBytes(20).toString("hex"), Math.floor(1000 + Math.random() * 9000)]);
-        await client.query('COMMIT');
-        return rows[0].user_id;
-      } catch (e) {
-        await client.query('ROLLBACK')
-        return false;
-      } finally {
-        client.release();
-      }
+    return promise = new Promise(async function(resolve, reject) {
+        bcrypt.hash(password, 10).then(async function(hash){
+        const client = await pool.connect()
+        try {
+            await client.query('BEGIN')
+            const { rows } = await client.query("INSERT INTO users(email, password, verifykey, verifypin, created_on, last_login) VALUES($1, $2, $3, $4, now(), now()) RETURNING user_id", [email, hash, crypto.randomBytes(20).toString("hex"), Math.floor(1000 + Math.random() * 9000)]);
+            await client.query('COMMIT');
+            resolve(rows[0].user_id);
+        } catch (e) {
+            await client.query('ROLLBACK')
+            resolve(false);
+        } finally {
+            client.release();
+        }
+        });
+    });
 }
 
 /**
@@ -63,30 +65,30 @@ module.exports.createUser = async (email, password) => {
  */
 module.exports.loginUser = async (email, password) => {
     return promise = new Promise(async function(resolve, reject) {
-        const client = await pool.connect()
+        const client = await pool.connect();
         try {
             await client.query('BEGIN')
-            const { rows } = await client.query("SELECT user_id, password, iv, verified, verifykey from users where email=$1 FOR UPDATE", [email]);
+            const { rows } = await client.query("SELECT user_id, password, verified, verifykey from users where email=$1 FOR UPDATE", [email]);
             if(rows[0] === undefined || rows.length == 0 || rows == null){
                 await client.query('ROLLBACK');
                 resolve([false]);
             }else{
-                let depass = { iv: rows[0].iv, encryptedData: rows[0].password};
-                depass = module.exports.decrypt(depass);
-                if (depass === password) {
-                    if(rows[0].verified === 'N'){
-                        await client.query('ROLLBACK');
-                        resolve([false, rows[0].verifykey]);
+                bcrypt.compare(password, rows[0].password).then(async function(isValidated){
+                    if (isValidated) {
+                        if(rows[0].verified === 'N'){
+                            await client.query('ROLLBACK');
+                            resolve([false, rows[0].verifykey]);
+                        }else{
+                            let session = crypto.randomBytes(16).toString("hex");
+                            await client.query("INSERT INTO session(session, user_id, created_on) VALUES ($1, $2, now())", [session, rows[0].user_id]);
+                            await client.query('COMMIT');
+                            resolve([true, session]);
+                        }
                     }else{
-                        let session = crypto.randomBytes(16).toString("hex");
-                        await client.query("INSERT INTO session(session, user_id) VALUES ($1, $2)", [session, rows[0].user_id]);
-                        await client.query('COMMIT');
-                        resolve([true, session]);
+                        await client.query('ROLLBACK');
+                        resolve([false]);
                     }
-                }else{
-                    await client.query('ROLLBACK');
-                    resolve([false]);
-                }
+                })
             }
         } catch (e) {
         await client.query('ROLLBACK')
@@ -155,32 +157,3 @@ module.exports.isSession = async (session) => {
     }
 }
 
-
-/**
- * Encrypt any information with a cipher.
- * @param {String} text The text to encrypt.
- * @returns {Object} Contains an object with .encryptedData (encrypted data) and .iv (assoiated iv)
- */
-module.exports.encrypt = (text) => {
-    let cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
-    let encrypted = cipher.update(text);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    let biv = iv;
-    iv = crypto.randomBytes(16);
-    return { iv: biv.toString("hex"), encryptedData: encrypted.toString("hex") };
-}
-  
-/**
- * Decrypts any information with a cipher.
- * @param {Object} text Object with .encryptedData and .iv
- * @returns {Object} Contains an object with .encrypted (encrypted data) and .iv (assoiated iv)
- */
-module.exports.decrypt = (text) => {
-    let iv = Buffer.from(text.iv, "hex");
-    let encryptedText = Buffer.from(text.encryptedData, "hex");
-    let decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(key), iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
-}
-  
