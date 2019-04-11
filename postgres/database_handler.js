@@ -8,7 +8,7 @@ const pool = new Pool({
 });
 
 const user_database = require('./user_database');
-
+const server_database = require('./server_database');
 
 //      -=- Table functions -=-
 
@@ -28,11 +28,19 @@ module.exports.doesTableExist = (table) => {
 
 
 /**
- * Gets the user database instance.
+ * Gets the user database instance manager.
  * @returns {user_database} The current database instance.
  */
 module.exports.getUserDatabase = () => {
     return user_database(pool);
+}
+
+/**
+ * Gets the servers database instance manager.
+ * @returns {server_database} The current database instance.
+ */
+module.exports.getServerDatabase = () => {
+    return server_database(pool);
 }
 
 
@@ -48,5 +56,14 @@ module.exports.setupUserDB = () => {
             if(!exists) module.exports.getUserDatabase().createSessionTable();
             return true;
         });
+    });
+}
+
+/**
+ * Check if the servers table exists, if not create.
+ */
+module.exports.setupServersDB = () => {
+    module.exports.doesTableExist('servers').then(exists => {
+        if(!exists) module.exports.getServerDatabase().createServerTable();
     });
 }

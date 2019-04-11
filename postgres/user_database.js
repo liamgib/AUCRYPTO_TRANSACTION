@@ -13,7 +13,7 @@ module.exports = function main(poola){
  */
 module.exports.createUserTable = () => {
     return promise = new Promise(function(resolve, reject) {
-        pool.query("CREATE TABLE users(user_id serial PRIMARY KEY, email VARCHAR (355) UNIQUE NOT NULL, password VARCHAR (60) NOT NULL, verifykey VARCHAR(45) NOT NULL, verifypin integer NOT NULL, verified VARCHAR(20) DEFAULT 'N', created_on TIMESTAMP NOT NULL, last_login TIMESTAMP);", (err, res) => {
+        pool.query("CREATE TABLE users(user_id serial PRIMARY KEY, email VARCHAR (355) UNIQUE NOT NULL, password VARCHAR (60) NOT NULL, useragent VARHCAR(60) NOT NULL, verifykey VARCHAR(45) NOT NULL, verifypin integer NOT NULL, verified VARCHAR(20) DEFAULT 'N', created_on TIMESTAMP NOT NULL, last_login TIMESTAMP);", (err, res) => {
             if (err) return resolve(false);
             return true;
         });
@@ -67,8 +67,8 @@ module.exports.loginUser = async (email, password) => {
     return promise = new Promise(async function(resolve, reject) {
         const client = await pool.connect();
         try {
-            await client.query('BEGIN')
-            const { rows } = await client.query("SELECT user_id, password, verified, verifykey from users where email=$1 FOR UPDATE", [email]);
+            await client.query('BEGIN');
+            const { rows } = await client.query("SELECT user_id, password, verified, verifykey from users where email=$1", [email]);
             if(rows[0] === undefined || rows.length == 0 || rows == null){
                 await client.query('ROLLBACK');
                 resolve([false]);

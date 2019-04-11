@@ -11,6 +11,7 @@ app.get('/', (req, res) => {
 
 app.listen(3000, async () => {
   await database.setupUserDB();
+  await database.setupServersDB();
 
   /*
   await database.getUserDatabase().createUser('liamagibasaa', 'testing123').then(user_id => {
@@ -30,7 +31,20 @@ app.listen(3000, async () => {
   });
   let is_session = await database.getUserDatabase().isSession(session);
   console.log(session, is_session);*/
-  
+
+  /*await database.getServerDatabase().createServer().then(result => {
+    if(result !== false){
+    let serv_id = result[0];
+    let serv_key = result[1];
+    console.log(serv_id, serv_key);
+    }
+  });
+  */
+
+  /*await database.getServerDatabase().loginServer('WEB-AU8785', '+dQEcAbeSdH5NRFyOEymOLZHi8o3UeDCkhn3CGnL').then(result => {
+    console.log(result);
+  })*/
+
 
 
 
