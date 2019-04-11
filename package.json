@@ -17,11 +17,14 @@
   },
   "homepage": "https://github.com/liamgib/AUCRYPTO_TRANSACTION#readme",
   "dependencies": {
-    "bcrypt": "^3.0.5",
-    "body-parser": "^1.18.3",
-    "crypto": "^1.0.1",
-    "express": "^4.16.4",
-    "fconfig_handler": "^1.0.8",
-    "pg": "^7.9.0"
+    "bcrypt": "3.0.5",
+    "body-parser": "1.18.3",
+    "crypto": "1.0.1",
+    "express": "4.16.4",
+    "express-content-length-validator": "1.0.0",
+    "fconfig_handler": "1.0.8",
+    "helmet": "3.16.0",
+    "hpp": "0.2.2",
+    "pg": "7.9.0"
   }
 }
