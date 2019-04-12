@@ -28,6 +28,9 @@ app.listen(3000, async () => {
   await database.getUserDatabase().createUser('liamagibasaa', 'testing123').then(user_id => {
     console.log("A", user_id);
   });
+  database.getUserDatabase().deleteUser('liamagibasaa').then(ifDeleted => {
+    console.log("A", ifDeleted);
+  })
   
   let verify_user = await database.getUserDatabase().userVerification('bd56b5cefb45d55b75c26fd0f90b5ec50d80cdaf', 8815);
   console.log("Verified: ", verify_user);

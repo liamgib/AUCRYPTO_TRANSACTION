@@ -59,23 +59,11 @@ module.exports.createUser = async (email, password) => {
 
 module.exports.deleteUser = async (email) => {
     return promise = new Promise(async function(resolve, reject) {
-        const client = await pool.connect()
         try {
-            await client.query('BEGIN')
-            const { rows } = await client.query("SELECT count(*) as c from users WHERE email=$1", [email]);
-            if(parseInt(rows[0].c) == 1){
-                await client.query("DELETE from users WHERE email=$1", [email]);
-                await client.query('COMMIT');
-                resolve(true);
-            }else{
-                await client.query('ROLLBACK')
-                resolve(false);
-            }
+            const res = await pool.query("DELETE from users WHERE email=$1", [email]);
+            resolve((res.rowCount == 0) ? false : true);
         } catch (e) {
-            await client.query('ROLLBACK')
             resolve(false);
-        } finally {
-            client.release();
         }
         
     });

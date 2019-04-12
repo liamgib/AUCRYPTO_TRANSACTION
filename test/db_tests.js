@@ -9,9 +9,9 @@ let verify_key;
 let verify_pin;
 let session;
 
-describe('Database manager', function() {
+describe('User database manager', function() {
 
-  context('User functions', function() {
+  context('functions', function() {
 
 
     it('user deletion - should error when it does not exist', function(done) {
