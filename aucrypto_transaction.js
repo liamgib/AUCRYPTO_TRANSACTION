@@ -5,10 +5,13 @@ const bodyParser = require('body-parser');
 const hpp = require('hpp');
 const helmet = require('helmet');
 const contentLength = require('express-content-length-validator');
+const cors = require("cors");  
 const app = express();
 
+//**  Security Middleware */
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(hpp());
+app.use(cors());
 app.use(helmet());
 app.use(helmet.hidePoweredBy({setTo: 'Coffee 1.0'}));
 app.use(contentLength.validateMax({max: 9999, status: 400, message: "I see how it is. watch?v=ewRjZoRtu0Y"}));
