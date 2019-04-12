@@ -57,6 +57,30 @@ module.exports.createUser = async (email, password) => {
     });
 }
 
+module.exports.deleteUser = async (email) => {
+    return promise = new Promise(async function(resolve, reject) {
+        const client = await pool.connect()
+        try {
+            await client.query('BEGIN')
+            const { rows } = await client.query("SELECT count(*) as c from users WHERE email=$1", [email]);
+            if(parseInt(rows[0].c) == 1){
+                await client.query("DELETE from users WHERE email=$1", [email]);
+                await client.query('COMMIT');
+                resolve(true);
+            }else{
+                await client.query('ROLLBACK')
+                resolve(false);
+            }
+        } catch (e) {
+            await client.query('ROLLBACK')
+            resolve(false);
+        } finally {
+            client.release();
+        }
+        
+    });
+}
+
 /**
  * Used to login the user with a give email or password.
  * @param {String} email The associated accounts email address.
@@ -68,7 +92,7 @@ module.exports.loginUser = async (email, password) => {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-            const { rows } = await client.query("SELECT user_id, password, verified, verifykey from users where email=$1", [email]);
+            const { rows } = await client.query("SELECT user_id, password, verified, verifykey, verifypin from users where email=$1", [email]);
             if(rows[0] === undefined || rows.length == 0 || rows == null){
                 await client.query('ROLLBACK');
                 resolve([false]);
@@ -78,7 +102,7 @@ module.exports.loginUser = async (email, password) => {
                     if (isValidated) {
                         if(rows[0].verified === 'N'){
                             await client.query('ROLLBACK');
-                            resolve([false, rows[0].verifykey]);
+                            resolve([false, rows[0].verifykey, rows[0].verifypin]);
                         }else{
                             crypto.randomBytes(30, async function(err, buffer) {
                                 let session = buffer.toString('base64');
@@ -110,8 +134,8 @@ module.exports.loginUser = async (email, password) => {
  */
 module.exports.userVerification = async (verifykey, pin) => {
     try {
-        await pool.query("UPDATE users SET verified='Y' where verifykey=$1 AND verifypin=$2", [verifykey, pin]);
-        return true;
+        const res = await pool.query("UPDATE users SET verified='Y' where verifykey=$1 AND verifypin=$2", [verifykey, pin]);
+        return (res.rowCount == 0) ? false : true;
     } catch(e) {
         return false;
     }
