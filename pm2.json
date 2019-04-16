@@ -1,0 +1,11 @@
+{
+    "name": "aucrypto_transaction",
+    "script": "src/aucrypto_transaction.js",
+    "instances": "0",
+    "env": {
+      "NODE_ENV": "development"
+    },
+    "env_production" : {
+      "NODE_ENV": "production"
+    }
+  }

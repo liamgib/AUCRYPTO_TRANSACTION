@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 let pool;
 
 module.exports = function main(poola){
@@ -50,7 +50,7 @@ module.exports.createServer = () => {
 module.exports.isSession = async (session) => {
     try {
         let { rows } = await pool.query('SELECT server_id, banned from servers where session=$1', [session]);
-        if (rows[0] === undefined || rows.length === 0 || rows === null || user_id === undefined) {
+        if (rows[0] === undefined || rows.length === 0 || rows === null) {
             return false;
         } else {
             return rows[0].banned == 'N' ? true : false;

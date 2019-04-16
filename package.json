@@ -4,7 +4,8 @@
   "description": "AUCRYPTO Internal transaction server communication to a Postgres cluster to ensure ACID compliance. The transaction server acts as the middleman for new transactions and blocks from digital currencies.",
   "main": "aucrypto_transaction.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "start": "node src/aucrypto_transaction.js"
   },
   "repository": {
     "type": "git",
@@ -17,15 +18,16 @@
   },
   "homepage": "https://github.com/liamgib/AUCRYPTO_TRANSACTION#readme",
   "dependencies": {
-    "bcrypt": "3.0.5",
+    "bcryptjs": "2.4.3",
     "body-parser": "1.18.3",
     "cors": "2.8.5",
-    "crypto": "1.0.1",
+    "docker-swarm-secrets": "1.0.0",
     "express": "4.16.4",
     "express-content-length-validator": "1.0.0",
     "fconfig_handler": "1.0.8",
     "helmet": "3.16.0",
     "hpp": "0.2.2",
+    "npm": "6.9.0",
     "pg": "7.9.0"
   },
   "devDependencies": {

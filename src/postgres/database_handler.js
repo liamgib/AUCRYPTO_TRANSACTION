@@ -1,4 +1,6 @@
-const { Pool, Client } = require('pg')
+const { Pool, Client } = require('pg');
+const dockerSecrets = require('docker-swarm-secrets');
+
 const pool = new Pool({
     user: 'postgres',
     host: 'localhost',

@@ -16,11 +16,18 @@ app.use(helmet());
 app.use(helmet.hidePoweredBy({setTo: 'Coffee 1.0'}));
 app.use(contentLength.validateMax({max: 9999, status: 400, message: "I see how it is. watch?v=ewRjZoRtu0Y"}));
 
+app.use(function(err, req, res, next) {
+  res.status(err.status || 500);
+  res.send();
+});
+
+
+
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.listen(3000, async () => {
+app.listen(3000, '0.0.0.0', async () => {
   await database.setupUserDB();
   await database.setupServersDB();
 
@@ -57,6 +64,9 @@ app.listen(3000, async () => {
 
   /*await database.getServerDatabase().loginServer('WEB-AU8785', '+dQEcAbeSdH5NRFyOEymOLZHi8o3UeDCkhn3CGnL').then(result => {
     console.log(result);
+    database.getServerDatabase().isSession(result[1]).then(resultb => {
+      console.log(resultb);
+    })
   })*/
 
 
