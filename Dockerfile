@@ -8,6 +8,7 @@ RUN apk --no-cache add --virtual native-deps \
 COPY src src/
 COPY package.json .
 COPY pm2.json .
+COPY .git .
 
 # Install app dependencies
 ENV NPM_CONFIG_LOGLEVEL warn
