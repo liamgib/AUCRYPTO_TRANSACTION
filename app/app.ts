@@ -1,6 +1,6 @@
 import database_handler from './postgres/database_handler';
 const database = new database_handler();
-
+import Coin from './currency/coin';
 import express from "express";
 import bodyParser from 'body-parser';
 const hpp = require('hpp');
@@ -25,6 +25,7 @@ app.get('/', (req, res) => {
 app.listen(3001, '0.0.0.0', async () => {
   await database.setupUserDB();
   await database.setupServersDB();
-  
+  let coins = await database.getCurrenciesDatabase().getCoins();
+  console.log(coins);
   console.log('AUCRYPTO - Transaction worker started → PORT 3001');
 });

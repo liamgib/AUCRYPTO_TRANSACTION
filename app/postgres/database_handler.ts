@@ -15,6 +15,9 @@ const user_database = new userDatabase(pool);
 import serverDatabase from './server_database';
 const server_database = new serverDatabase(pool);
 
+import currenciesDatabase from './currencies_database';
+const currencies_database = new currenciesDatabase(pool);
+
 export default class database_handler {
 
     /**
@@ -47,6 +50,14 @@ export default class database_handler {
         return server_database;
     }
 
+    /**
+     * Gets the servers database instance manager.
+     * @returns {currencies_database} The current database instance.
+     */
+    public getCurrenciesDatabase = ():currenciesDatabase => {
+        return currencies_database;
+    }
+
     //        ----- SETUP FUNCTIONS ----
 
     /**
@@ -57,7 +68,10 @@ export default class database_handler {
             if(!exists) this.getUserDatabase().createUserTable();
             this.doesTableExist('session').then((exists : boolean) => {
                 if(!exists) this.getUserDatabase().createSessionTable();
-                return true;
+                this.doesTableExist('currencies').then((exists : boolean) => {
+                    if(!exists) this.getCurrenciesDatabase().createCurrenciesTable();
+                    return true;
+                });
             });
         });
     }
