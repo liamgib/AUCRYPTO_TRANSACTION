@@ -83,7 +83,7 @@ export default class server_database {
                 const { rows } = await client.query("SELECT key, banned from servers where server_id=$1", [server_id]);
                 if(rows[0] === undefined || rows.length == 0 || rows == null){
                     await client.query('ROLLBACK');
-                    resolve([false]);
+                    resolve([false, "A"]);
                 }else{
                     bcrypt.compare(server_key, rows[0].key).then(async (isValidated:boolean) => {
     
@@ -101,7 +101,7 @@ export default class server_database {
                             }
                         }else{
                             await client.query('ROLLBACK');
-                            resolve([false]);
+                            resolve([false, "B"]);
                         }
                     })
                 }
@@ -112,6 +112,17 @@ export default class server_database {
             client.release();
             }
         }).catch();
+    }
+
+    public getServer = async (serverIdent: string):Promise<any> =>  {
+        var _this = this;
+        return new Promise<any>((resolve) => {
+            _this.pool.query(`SELECT session, host from servers where server_id = $1`, [serverIdent], (err:any, res:any) => {
+                if(err) return resolve('');
+                if(res.rows[0] === undefined || res.rows.length == 0 || res.rows == null) return resolve('');
+                return resolve([res.rows[0].session, res.rows[0].host]);
+            });
+        });
     }
 
 

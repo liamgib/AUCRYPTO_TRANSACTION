@@ -31,7 +31,7 @@ export default class server_database {
             _this.pool.query(`SELECT * from currencies`, (err:any, res:any) => {
                 if(res.rowCount == 0) return resolve(coins);
                 for(let i = 0, len = res.rows.length; i < len; i++){
-                    coins.push(new Coin(res.rows[i].symbol, res.rows[i].name, res.rows[i].addressTypes));
+                    coins.push(new Coin(res.rows[i].symbol, res.rows[i].name, res.rows[i].addressTypes, res.rows[i].server));
                     if(i == len - 1) return resolve(coins);
                 }
             });

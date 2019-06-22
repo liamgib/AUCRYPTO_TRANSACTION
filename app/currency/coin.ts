@@ -1,19 +1,16 @@
-const EC = require('elliptic').ec;
-const ec = new EC('secp256k1');
-const sha256 = require('js-sha256');
-const RIPEMD160 = require('ripemd160');
-const bs58 = require('bs58');
 
 export default class Coin {
 
-    private addressPrefixs:Array<String>;
-    private symbol:String;
-    private name:String;
+    private addressPrefixs:Array<string>;
+    private symbol:string;
+    private name:string;
+    private serverIdent:string;
 
-    constructor(symbol:String, name:String, addressPrefixs:Array<String>, ){
+    constructor(symbol:string, name:string, addressPrefixs:Array<string>, serverIdent:string){
         this.addressPrefixs = addressPrefixs;
         this.symbol = symbol;
         this.name = name;
+        this.serverIdent = serverIdent;
     }
 
 
@@ -27,15 +24,23 @@ export default class Coin {
     /**
      * Used to get the coin symbol code, eg 'BTC'/'LTC'/'NAH'
      */
-    public getSymbol():String {
+    public getSymbol():string {
         return this.symbol;
     }
 
     /**
      * Used to get the display name of the coin.
      */
-    public getName():String {
+    public getName():string {
         return this.name;
+    }
+
+
+    /**
+     * Will return the server ident of the NodeListener.
+     */
+    public getServer():string {
+        return this.serverIdent;
     }
 
     
