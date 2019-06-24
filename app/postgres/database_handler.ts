@@ -18,6 +18,10 @@ const server_database = new serverDatabase(pool);
 import currenciesDatabase from './currencies_database';
 const currencies_database = new currenciesDatabase(pool);
 
+import invoicesDatabase from './invoices_database';
+const invoices_database = new invoicesDatabase(pool);
+
+
 export default class database_handler {
 
     /**
@@ -51,17 +55,27 @@ export default class database_handler {
     }
 
     /**
-     * Gets the servers database instance manager.
-     * @returns {currencies_database} The current database instance.
+     * Gets the currencies database instance manager.
+     * @returns {currencies_database} The current currencies instance.
      */
     public getCurrenciesDatabase = ():currenciesDatabase => {
         return currencies_database;
     }
 
+    
+    /**
+     * Gets the invoices database instance manager.
+     * @returns {invoices_database} The current invoices instance.
+     */
+    public getInvoicesDatabase = ():invoicesDatabase => {
+        return invoices_database;
+    }
+
+
     //        ----- SETUP FUNCTIONS ----
 
     /**
-     * Check if session and users tables exists, if not create.
+     * Check if all tables exists, if not create them.
      */
     public setupUserDB = () => {
         this.doesTableExist('users').then((exists : boolean) => {
@@ -70,6 +84,10 @@ export default class database_handler {
                 if(!exists) this.getUserDatabase().createSessionTable();
                 this.doesTableExist('currencies').then((exists : boolean) => {
                     if(!exists) this.getCurrenciesDatabase().createCurrenciesTable();
+                    this.doesTableExist('invoices').then((exists : boolean) => {
+                        if(!exists) this.getInvoicesDatabase().createInvoicesTable();
+                        return true;
+                    });
                     return true;
                 });
             });

@@ -1,7 +1,7 @@
 import {Pool} from 'pg';
 import Coin from '../currency/coin';
 
-export default class server_database {
+export default class currencies_database {
 
     private pool : Pool;
 

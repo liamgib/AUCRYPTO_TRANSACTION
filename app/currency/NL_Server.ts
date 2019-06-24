@@ -1,5 +1,5 @@
 import database_handler from '../postgres/database_handler';
-import * as crypto from 'crypto';
+import crypto from "crypto";
 const fetch = require('node-fetch');
 
 export default class NL_Server {

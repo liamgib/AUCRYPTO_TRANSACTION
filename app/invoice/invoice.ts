@@ -36,6 +36,11 @@ export default class Invoice {
         await this.getDepositAddresses();
         return true;
     }
+
+
+    
+
+
     /**
      * Used to generate the most up to exchange rates for the invoice amount.
      */
@@ -61,6 +66,7 @@ export default class Invoice {
             }
         })
     }
+
 
     
 }
