@@ -38,6 +38,27 @@ export default class currencies_database {
         });
     }
 
+    public async getCoinFromSymbol(symbol:string):Promise<Coin> {
+        var _this = this;
+        return new Promise<Coin>(function(resolve, reject) {
+            _this.pool.query(`SELECT * from currencies where symbol=$1`, [symbol], (err:any, res:any) => {
+                if(res.rowCount == 0) return resolve(null);
+                return resolve(new Coin(res.rows[0].symbol, res.rows[0].name, res.rows[0].addressTypes, res.rows[0].server));
+            });
+        });
+    }
+
+    public getCoinFromServerID(serverID:string):Promise<Coin> {
+        var _this = this;
+        return new Promise<Coin>(function(resolve, reject) {
+            _this.pool.query(`SELECT * from currencies where server=$1`, [serverID], (err:any, res:any) => {
+                if(res.rowCount == 0) return resolve(null);
+                let c = new Coin(res.rows[0].symbol, res.rows[0].name, res.rows[0].addressTypes, res.rows[0].server);
+                return resolve(c);
+            });
+        });
+    }
+
 
 
 }

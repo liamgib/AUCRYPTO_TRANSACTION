@@ -1,5 +1,5 @@
 import { Pool, Client } from 'pg';
-
+import ExchangeCenter from '../currency/exchangecenter';
 const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
@@ -19,11 +19,20 @@ import currenciesDatabase from './currencies_database';
 const currencies_database = new currenciesDatabase(pool);
 
 import invoicesDatabase from './invoices_database';
-const invoices_database = new invoicesDatabase(pool);
+
+import companyDatabase from './company_database';
+const company_database = new companyDatabase(pool);
+
 
 
 export default class database_handler {
 
+    private ExCenter:ExchangeCenter;
+    private invoices_database:invoicesDatabase;
+    constructor(ExCenter:ExchangeCenter) {
+        this.ExCenter = ExCenter;
+        this.invoices_database = new invoicesDatabase(pool, ExCenter);
+    }
     /**
      * Checks to see if a table exists with the current database.
      * @param {String} table Table to check.
@@ -68,7 +77,15 @@ export default class database_handler {
      * @returns {invoices_database} The current invoices instance.
      */
     public getInvoicesDatabase = ():invoicesDatabase => {
-        return invoices_database;
+        return this.invoices_database;
+    }
+
+    /**
+     * Gets the company database instance manager.
+     * @returns {company_database} The current invoices instance.
+     */
+    public getCompanyDatabase = ():companyDatabase => {
+        return company_database;
     }
 
 
@@ -86,9 +103,11 @@ export default class database_handler {
                     if(!exists) this.getCurrenciesDatabase().createCurrenciesTable();
                     this.doesTableExist('invoices').then((exists : boolean) => {
                         if(!exists) this.getInvoicesDatabase().createInvoicesTable();
-                        return true;
+                        this.doesTableExist('company').then((exists : boolean) => {
+                            if(!exists) this.getCompanyDatabase().createCompanyTable();
+                            return true;
+                        });
                     });
-                    return true;
                 });
             });
         });

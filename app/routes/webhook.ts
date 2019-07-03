@@ -1,7 +1,11 @@
 import express from "express";
-import database_handler from '../postgres/database_handler';
 import crypto from "crypto";
-const database = new database_handler();
+import ExchangeCenter from '../currency/exchangecenter';
+const ExCenter = new ExchangeCenter();
+
+import database_handler from '../postgres/database_handler';
+const database = new database_handler(ExCenter);
+import Invoice from '../invoice/invoice';
 let router = express.Router();
 
 
@@ -21,7 +25,6 @@ async function authenticationMiddleware(req:any, res:any, next:any) {
     if(!server) return next({error: 'Unable to identify server.'});
     let servInstance = await database.getServerDatabase().getServer(server);
     if(servInstance == '') return next({error: 'Unable to identify server.'});
-    
     const payload = JSON.stringify(req.body);
     if(!payload){
         return next('Request body empty');
@@ -37,9 +40,34 @@ async function authenticationMiddleware(req:any, res:any, next:any) {
 }
 
 
-router.post('/invoiceUpdate', authenticationMiddleware, (req, res) => {
-    console.log(req.body);
-    res.status(200).send({status: 'Received update'});
+router.post('/invoiceUpdate', authenticationMiddleware, async (req, res) => {
+    const server = req.get('X-INTER-AUCRYPTO-SERV');
+    //Get coin from symbol
+    let coin = await database.getCurrenciesDatabase().getCoinFromServerID(server);
+    if(coin == null) {
+        console.log('Unable to determine SYMBOL', req.body);
+        res.status(400).send({status: 'Unable to determine SYMBOL.'});
+    }else {
+        if(req.body.hasOwnProperty('data')) {
+            if(req.body.data.hasOwnProperty('events')) {
+                if(req.body.data.events.hasOwnProperty('invoiceID')) {
+                    let invoice = await database.getInvoicesDatabase().getInvoiceFromID(req.body.data.events.invoiceID);
+                    if(invoice !== null) {
+                        console.log(invoice);
+                    } else {
+                        //Unable to find invoice associated, error log.
+                    }
+                } else {
+                    //No invoice associated with data, error log.
+                }
+            } else {
+                //No events associated with data of update, error log.
+            }
+        } else {
+            //Unable to determine request, error log
+        }
+        res.status(200).send({status: 'Received update'});
+    }
 })
 
 router.use((err:any, req:any, res:any, next:any) => {
