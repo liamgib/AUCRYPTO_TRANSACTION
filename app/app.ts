@@ -1,3 +1,5 @@
+const Sentry = require('@sentry/node');
+Sentry.init({ dsn: 'https://58c760d17c60405db13f92bbe1744a89@sentry.io/1497974' });
 import ExchangeCenter from './currency/exchangecenter';
 const ExCenter = new ExchangeCenter();
 
@@ -23,7 +25,7 @@ app.use(helmet());
 app.use(helmet.hidePoweredBy({setTo: 'Vodka'}));
 app.use(contentLength.validateMax({max: 9999, status: 400, message: "I see how it is. watch?v=ewRjZoRtu0Y"}));
 app.use('/server', require('./routes/server'));
-app.use('/webhook', require('./routes/webhook')(ExCenter));
+app.use('/webhook', require('./routes/webhook'));
 
 app.get('/', (req, res) => {
   res.send('Hello World - Changed, again!!');
@@ -36,11 +38,16 @@ app.listen(3001, '0.0.0.0', async () => {
   //let inv = new Invoice('1245343434', null, 190, ExCenter, coins);
   //await inv.setupInvoice();
   //console.log(inv);
-  let comp = new Company('Acme Organsiation', {'NAH': 'abcdf', 'BTC': 'DTC'});
+  /*let comp = new Company('Acme Organsiation', {'NAH': 'abcdf', 'BTC': 'DTC'});
   comp.setUUID('b014f36c-4967-46a4-bbd8-b39f898413ff');
-  let invoice = new Invoice(comp, 190, ExCenter, coins);
+  let invoice = new Invoice(comp, 0.5, ExCenter, coins);
+
+
   await invoice.setupInvoice();
+
   database.getInvoicesDatabase().insertInvoice(invoice);
+  */
+
   //console.log(inv.getAcceptedCoinsString());
   //database.getCompanyDatabase().insertCompany(comp);
   console.log('AUCRYPTO - Transaction worker started → PORT 3001');

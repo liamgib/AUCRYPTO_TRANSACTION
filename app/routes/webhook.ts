@@ -5,7 +5,9 @@ const ExCenter = new ExchangeCenter();
 
 import database_handler from '../postgres/database_handler';
 const database = new database_handler(ExCenter);
-import Invoice from '../invoice/invoice';
+const Sentry = require('@sentry/node');
+Sentry.init({ dsn: 'https://58c760d17c60405db13f92bbe1744a89@sentry.io/1497974' });
+
 let router = express.Router();
 
 
@@ -46,32 +48,103 @@ router.post('/invoiceUpdate', authenticationMiddleware, async (req, res) => {
     let coin = await database.getCurrenciesDatabase().getCoinFromServerID(server);
     if(coin == null) {
         console.log('Unable to determine SYMBOL', req.body);
+        Sentry.addBreadcrumb({
+            category: 'invoiceUpdate',
+            data: req.body,
+            level: Sentry.Severity.fatal
+          });
+        Sentry.captureException(new Error(`Unable to determine SYMBOL`));
         res.status(400).send({status: 'Unable to determine SYMBOL.'});
     }else {
         if(req.body.hasOwnProperty('data')) {
             if(req.body.data.hasOwnProperty('events')) {
                 if(req.body.data.events.hasOwnProperty('invoiceID')) {
-                    let invoice = await database.getInvoicesDatabase().getInvoiceFromID(req.body.data.events.invoiceID);
-                    if(invoice !== null) {
-                        console.log(invoice);
+                    let invoiceD = await database.getInvoicesDatabase().getInvoiceFromIDWithLOCK(req.body.data.events.invoiceID);
+                    if(invoiceD !== undefined) {
+                        let invoice = invoiceD[0];
+                        let eventType = req.body.eventType;
+                        if(eventType == 'MEMPOOL_DEPOSIT' || eventType == 'UNCONFIRMED_DEPOSIT' || eventType == 'CONFIRMED_DEPOSIT') {
+                            //Check if transaction is already added
+                            if(invoice.getTransactions().indexOf(req.body.data.transactionID) == -1) {
+                                let tx = invoice.getTransactions();
+                                tx.push(req.body.data.transactionID);
+                                invoice.setTransactions(tx)
+                                let amountResult = await invoice.addAmount(coin.getSymbol(), req.body.data.amount, eventType, invoiceD[1]);
+                                Sentry.addBreadcrumb({
+                                    category: 'invoiceUpdate',
+                                    message: amountResult,
+                                    data: req.body,
+                                    level: Sentry.Severity.fatal
+                                  });
+                                if(amountResult !== true) Sentry.captureException(new Error(amountResult));
+                            } else {
+                                //Aready inserted, confirmation? 
+                                //If so, forward
+                                invoiceD[1].query('ROLLBACK');
+                                invoiceD[1].release();
+                            }
+                           
+                        }else {
+                            //Amount was subtracted from an invoice account? 
+                            //Log and crosx if expected.
+                            invoiceD[1].query('ROLLBACK');
+                            invoiceD[1].release();
+                            Sentry.addBreadcrumb({
+                                category: 'invoiceUpdate',
+                                message: 'Substracted from an unexpected invoice account',
+                                data: req.body,
+                                level: Sentry.Severity.fatal
+                              });
+                            Sentry.captureException(new Error('Substracted from an unexpected invoice account'));
+                        }
                     } else {
-                        //Unable to find invoice associated, error log.
+                        //Unable to find invoice
+                        Sentry.addBreadcrumb({
+                            category: 'invoiceUpdate',
+                            message: 'Unable to find invoice with ID',
+                            data: req.body,
+                            level: Sentry.Severity.fatal
+                          });
+                        Sentry.captureException(new Error('Unable to find invoice with ID'));
                     }
                 } else {
                     //No invoice associated with data, error log.
+                    Sentry.addBreadcrumb({
+                        category: 'invoiceUpdate',
+                        message: 'No invoice associated with data',
+                        data: req.body,
+                        level: Sentry.Severity.error
+                      });
+                    Sentry.captureException(new Error('No invoice associated with data'));
                 }
             } else {
                 //No events associated with data of update, error log.
+                Sentry.addBreadcrumb({
+                    category: 'invoiceUpdate',
+                    message: 'No events associated with data of update',
+                    data: req.body,
+                    level: Sentry.Severity.error
+                  });
+                Sentry.captureException(new Error('No events associated with data of update'));
             }
         } else {
             //Unable to determine request, error log
+            Sentry.addBreadcrumb({
+                category: 'invoiceUpdate',
+                message: 'Unable to determine request',
+                data: req.body,
+                level: Sentry.Severity.info
+              });
+            Sentry.captureException(new Error('Unable to determine request'));
         }
         res.status(200).send({status: 'Received update'});
     }
 })
 
 router.use((err:any, req:any, res:any, next:any) => {
-    res.status(403).send({error: 'Request body was not signed or verification failed'});
+    var ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
+    Sentry.captureException(new Error('Authentication Failure - ' + ip));
+    res.status(403).send('Request body was not signed or verification failed');
 });
 
 

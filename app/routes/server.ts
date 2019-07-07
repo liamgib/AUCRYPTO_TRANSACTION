@@ -1,6 +1,6 @@
 import express from "express";
 import database_handler from '../postgres/database_handler';
-const database = new database_handler();
+const database = new database_handler(null);
 let router = express.Router();
 
 
