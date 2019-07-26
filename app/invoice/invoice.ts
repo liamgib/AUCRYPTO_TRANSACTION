@@ -35,7 +35,7 @@ export default class Invoice {
         this.ExCenter = ExchangeCenter;
         this.acceptedCoins = acceptedCoins;
         this.status = 'PENDING';
-        this.acceptedMinimumDeposit = 'MEMPOOL';
+        this.acceptedMinimumDeposit = 'UNCONFIRMED';
     }
 
 
@@ -79,7 +79,7 @@ export default class Invoice {
                     let updateResult = await this.database.getInvoicesDatabase().updateInvoice(this, poolClient);
                     if(updateResult == true) {
                         //Updated, resolve
-                        console.log(`Processed Payment AM:${amount} - ${eventType} - ${this.status}`);
+                        console.log(`Processed Payment ${this.invoiceID} AM:${amount} - ${eventType} - ${this.status}`);
                         Sentry.addBreadcrumb({
                             category: 'invoiceUpdate',
                             message: `Processed payment`,
@@ -93,12 +93,12 @@ export default class Invoice {
                         //Error occured, log.
                         Sentry.addBreadcrumb({
                             category: 'invoiceUpdate',
-                            message: `Error processing Payment [OVERPAID-ALREADYPAID]`,
+                            message: `Error processing Payment ${this.invoiceID} [OVERPAID-ALREADYPAID]`,
                             data: {amount: amount, eventType: eventType, symbol: symbol, invoiceID: this.getInvoiceID(), transactions: this.getTransactions()},
                             level: Sentry.Severity.error
                           });
                         if(poolClient !== undefined) poolClient.query('ROLLBACK');
-                        resolve(`Error processing Payment [DBUPDATE]`);
+                        resolve(`Error processing Payment ${this.invoiceID} [DBUPDATE]`);
                     }
                 } else {
                     if(poolClient !== undefined) poolClient.query('ROLLBACK');
