@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import database_handler from '../app/postgres/database_handler';
-const database = new database_handler();
+const database = new database_handler(null);
 let server_id:string;
 let server_key:string;
 let session:string;

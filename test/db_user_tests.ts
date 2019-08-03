@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import database_handler from '../app/postgres/database_handler';
-const database = new database_handler();
+const database = new database_handler(null);
 const email = "testinng@test.com.au";
 const pass = "aw6rkingpass!?";
 let verify_key:string;
@@ -154,7 +154,7 @@ describe('User database manager', function() {
       })
   
       it('user deletion - should not error', function(done) {
-        database.getUserDatabase().deleteUser(email).then(ifDeleted => {
+        database.getUserDatabase().deleteUser(email).then((ifDeleted:any) => {
           try {
             expect(ifDeleted).to.exist;
             expect(ifDeleted).to.equal(true);

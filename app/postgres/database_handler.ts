@@ -1,11 +1,12 @@
 import { Pool, Client } from 'pg';
 import ExchangeCenter from '../currency/exchangecenter';
+const settings = require('../config/settings.json');
 const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'aucrypto',
-    password: 'hf3hdi12fd_',
-    port: 5432,
+    user: settings.DB.user,
+    host: settings.DB.host,
+    database: settings.DB.database,
+    password: settings.DB.password,
+    port: settings.DB.port,
 });
 
 

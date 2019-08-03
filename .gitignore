@@ -2,3 +2,4 @@
 /node_modules
 /MySQL_config.conf
 /build
+/app/config/settings.json
