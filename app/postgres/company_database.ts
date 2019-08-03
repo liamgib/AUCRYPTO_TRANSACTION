@@ -44,6 +44,10 @@ export default class company_database {
         });
     }
 
+    /**
+     * Will lookup a company instance with a company ID
+     * @param companyId The Company ID to lookup with
+     */
     public getCompany(companyId:string): Promise<company> {
         var _this = this;
         return new Promise<company>(async (resolve, reject) => {
@@ -52,6 +56,7 @@ export default class company_database {
                     if(res.rowCount == 0) return resolve(null);
                     let comp = new Company(res.rows[0].name, res.rows[0].redirectAddresses);
                     comp.setUUID(res.rows[0].uuid);
+                    comp.setAPIClient(res.rows[0].apiclient);
                     return resolve(comp);
                 });
             } catch (e) {
@@ -59,6 +64,29 @@ export default class company_database {
                 return resolve(null);
             }
         });
+    }
+
+    /**
+     * Will lookup a company instance with a API Client Identifier.
+     * @param {String} APIClient The API Client Identifier
+     */
+    public getCompanyWithAPIClient(APIClient:String): Promise<company> {
+        var _this = this;
+        return new Promise<company>(async (resolve, reject) => {
+            try  {
+                await _this.pool.query("select * from company where apiclient=$1", [APIClient], (err:any, res:any) => {
+                    if(res.rowCount == 0) return resolve(null);
+                    let comp = new Company(res.rows[0].name, res.rows[0].redirectAddresses);
+                    comp.setUUID(res.rows[0].uuid);
+                    comp.setAPIClient(res.rows[0].apiclient);
+                    return resolve(comp);
+                });
+            } catch (e) {
+                console.log(e);
+                return resolve(null);
+            }
+        });
+
     }
 
 

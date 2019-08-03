@@ -79,7 +79,7 @@ export default class server_database {
         return  new Promise(async function(resolve, reject) {
             const client = await _this.pool.connect();
             try {
-                await client.query('BEGIN')
+                await client.query('BEGIN');
                 const { rows } = await client.query("SELECT key, banned from servers where server_id=$1", [server_id]);
                 if(rows[0] === undefined || rows.length == 0 || rows == null){
                     await client.query('ROLLBACK');

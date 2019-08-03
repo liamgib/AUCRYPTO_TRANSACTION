@@ -1,6 +1,7 @@
 export default class Company {
 
     private UUID:String;
+    private APIClient:String;
     private name:String;
     private redirectAddresses: any;
 
@@ -28,6 +29,21 @@ export default class Company {
         this.UUID = uuid;
     }
 
+    /**
+     * Will return the API Client Identifier.
+     * @returns {String} API Client Identifier
+     */
+    public getAPIClient() {
+        return this.APIClient;
+    }
+
+    /**
+     * Used to update the API Client Identifier.
+     * @param APIClient New API Client Identifier
+     */
+    public setAPIClient(APIClient:String) {
+        this.APIClient = APIClient;
+    }
 
     /**
      * Will return the company name
@@ -44,7 +60,6 @@ export default class Company {
         return this.redirectAddresses;
     }
 
-    
     /**
      * Used to retreive the enabled coins for the company.
      * @returns {String[]} List of coin Symbols that are enabled. 
@@ -53,7 +68,6 @@ export default class Company {
         return Object.keys(this.redirectAddresses);
     }
 
-    
     /**
      * Used to lookup a Redirect address given a coin symbol.
      * @param Symbol The coin symbol identifier

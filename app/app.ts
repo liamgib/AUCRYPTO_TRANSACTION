@@ -26,6 +26,7 @@ app.use(helmet.hidePoweredBy({setTo: 'Vodka'}));
 app.use(contentLength.validateMax({max: 9999, status: 400, message: "I see how it is. watch?v=ewRjZoRtu0Y"}));
 app.use('/server', require('./routes/server'));
 app.use('/webhook', require('./routes/webhook'));
+app.use('/api/v1', require('./routes/api'));
 
 app.get('/', (req, res) => {
   res.send('Hello World - Changed, again!!');
