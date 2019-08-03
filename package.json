@@ -8,7 +8,7 @@
     "start": "node build/aucrypto_transaction.js",
     "tsc": "tsc",
     "dev": "ts-node-dev --respawn --transpileOnly ./app/app.ts",
-    "prod": "tsc && node ./build/app.js"
+    "prod": "tsc && node ./build/app/app.js"
   },
   "repository": {
     "type": "git",
