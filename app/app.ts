@@ -32,7 +32,7 @@ app.get('/', (req, res) => {
   res.send('Hello World - Changed, again!!');
 });
 
-app.listen(3001, '0.0.0.0', async () => {
+app.listen(8001, '127.0.0.1', async () => {
   await database.setupUserDB();
   await database.setupServersDB();
   let coins = await database.getCurrenciesDatabase().getCoins();
