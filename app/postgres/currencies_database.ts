@@ -17,7 +17,14 @@ export default class currencies_database {
     public createCurrenciesTable = () => {
         var _this = this;
         return new Promise(function(resolve, reject) {
-            _this.pool.query(`CREATE TABLE public.currencies(symbol character varying(4) COLLATE pg_catalog."default" NOT NULL,name character varying(64) COLLATE pg_catalog."default","addressTypes" character varying(10)[] COLLATE pg_catalog."default",CONSTRAINT currencies_pkey PRIMARY KEY (symbol))`, (err:any, res:any) => {
+            _this.pool.query(`CREATE TABLE public.currencies
+            (
+                symbol character varying(4) COLLATE pg_catalog."default" NOT NULL,
+                name character varying(64) COLLATE pg_catalog."default",
+                "addressTypes" character varying(10)[] COLLATE pg_catalog."default",
+                server character varying(64) COLLATE pg_catalog."default",
+                CONSTRAINT currencies_pkey PRIMARY KEY (symbol)
+            )`, (err:any, res:any) => {
                 if (err){ console.log(err); return resolve(false); }
                 return true;
             });
