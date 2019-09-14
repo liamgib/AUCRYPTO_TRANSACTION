@@ -37,7 +37,7 @@ export default class NL_Server {
                     body: JSON.stringify({invoiceId: invoiceId}),
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-INTER-AUCRYPTO-VERIF': digest }
+                        'XINTERAUCRYPTOVERIF': digest }
                 }).then((res:any) => res.json())
                 .then((json:any) => {
                     return resolve(json);

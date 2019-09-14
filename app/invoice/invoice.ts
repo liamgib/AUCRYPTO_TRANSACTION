@@ -24,6 +24,7 @@ export default class Invoice {
     private invoiceID: string;
     private invoiceCompany: Company;
     private transactions: String[] = [];
+    private paymentTransactions: String[] = [];
 
     private ExCenter: ExchangeCenter;
     private database:database_handler;
@@ -57,23 +58,27 @@ export default class Invoice {
                 if(eventType == 'CONFIRMED_DEPOSIT' && (this.acceptedMinimumDeposit == 'MEMPOOL' ||  this.acceptedMinimumDeposit == 'UNCONFIRMED' ||  this.acceptedMinimumDeposit == 'CONFIRMED')) accepted = true;
                 if(eventType == 'UNCONFIRMED_DEPOSIT'&& (this.acceptedMinimumDeposit == 'UNCONFIRMED' ||  this.acceptedMinimumDeposit == 'MEMPOOL')) accepted = true;
                 if(eventType == 'MEMPOOL_DEPOSIT' && this.acceptedMinimumDeposit == 'MEMPOOL') accepted = true;
-                if(accepted && this.status !== 'PAID' && this.status !== 'OVERPAID') {
+                if(accepted) {
                     this.lastPaidTime = new Date();
                     if(amount < value) {
                         //Underpaid //Split payment?
                         this.status = 'UNDERPAID';
-                        this.amountPaidAUD += amountAUD;
-                        this.remainingAmounts[symbol].value = value - amount;                    
+                        this.amountPaidAUD += amountAUD;                  
                     } else if(amount == value) {
                         //Paid
                         this.status = 'PAID';
                         this.amountPaidAUD += amountAUD;
-                        this.remainingAmounts[symbol].value = 0;
                     } else if(amount > value) {
                         //Overpaid
                         this.status = 'OVERPAID';
                         this.amountPaidAUD += amountAUD;
-                        this.remainingAmounts[symbol].value = value - amount;  
+                    }
+                    //Recalcuate remainingAmounts
+                    let remainingAmount = this.amountAUD - this.amountPaidAUD;
+                    for(let i = 0; i < Object.keys(this.remainingAmounts).length; i++) {
+                        let coin = Object.keys(this.remainingAmounts)[i];
+                        let rate = this.remainingAmounts[coin].rate;
+                        this.remainingAmounts[coin].value = remainingAmount / rate;
                     }
                     //Update database
                     let updateResult = await this.database.getInvoicesDatabase().updateInvoice(this, poolClient);
@@ -85,9 +90,8 @@ export default class Invoice {
                             message: `Processed payment`,
                             data: {amount: amount, eventType: eventType, symbol: symbol, invoiceID: this.getInvoiceID(), transactions: this.getTransactions()},
                             level: Sentry.Severity.error
-                          });
+                            });
                         if(poolClient !== undefined) poolClient.query('COMMIT');
-                        if(poolClient !== undefined) poolClient.release();
                         resolve(true);
                     }else {
                         //Error occured, log.
@@ -96,28 +100,15 @@ export default class Invoice {
                             message: `Error processing Payment ${this.invoiceID} [OVERPAID-ALREADYPAID]`,
                             data: {amount: amount, eventType: eventType, symbol: symbol, invoiceID: this.getInvoiceID(), transactions: this.getTransactions()},
                             level: Sentry.Severity.error
-                          });
+                            });
                         if(poolClient !== undefined) poolClient.query('ROLLBACK');
                         resolve(`Error processing Payment ${this.invoiceID} [DBUPDATE]`);
                     }
                 } else {
                     if(poolClient !== undefined) poolClient.query('ROLLBACK');
-                    if(poolClient !== undefined) poolClient.release();
-                    if(this.status == 'PAID' || this.status == 'UNDERPAID') {
-                       //Status is already marked as paid...? Overpaid?
-                       Sentry.addBreadcrumb({
-                        category: 'invoiceUpdate',
-                        message: `Error processing Payment [OVERPAID-ALREADYPAID]`,
-                        data: {amount: amount, eventType: eventType, symbol: symbol, invoiceID: this.getInvoiceID(), transactions: this.getTransactions()},
-                        level: Sentry.Severity.error
-                      });
-                       resolve(`Error processing Payment [OVERPAID-ALREADYPAID]`);
-                    } else {
-                       //Payment is not adequate enough to validate
-                       resolve(true);
-                    }
-    
+                    resolve(true);
                 }
+                
             }
         });
     }
@@ -173,6 +164,7 @@ export default class Invoice {
             return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
         });
     }
+
     /**
      * Used to update the invoice ID instance. 
      * @param uuid New UUID to update with
@@ -211,6 +203,11 @@ export default class Invoice {
 
     public setLastPaidTime(date:Date){
         this.lastPaidTime = date;
+    }
+
+    public setPaymentTransactionIds(paymentTransactionIds: String[]) {
+        if(paymentTransactionIds == null) paymentTransactionIds = [];
+        this.paymentTransactions = paymentTransactionIds;
     }
     
     /**
@@ -276,6 +273,8 @@ export default class Invoice {
         return this.lastPaidTime;
     }
 
-
+    public getPaymentTransactionIDs() {
+        return this.paymentTransactions;
+    }
     
 }

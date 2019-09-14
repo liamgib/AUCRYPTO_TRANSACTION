@@ -23,7 +23,7 @@ router.post('/login', (req, res) => {
 });
 
 async function authenticationMiddleware(req:any, res:any, next:any) {
-    const server = req.get('X-INTER-AUCRYPTO-SERV');
+    const server = req.get('XINTERAUCRYPTOSERV');
     if(!server) return next({error: 'Unable to identify server.'});
     let servInstance = await database.getServerDatabase().getServer(server);
     if(servInstance == '') return next({error: 'Unable to identify server.'});
@@ -34,7 +34,7 @@ async function authenticationMiddleware(req:any, res:any, next:any) {
 
     const hmac = crypto.createHmac('sha1', servInstance[0]);
     const digest = 'sha1=' + hmac.update(payload).digest('hex');
-    const checksum = req.get('X-INTER-AUCRYPTO-VERIF');
+    const checksum = req.get('XINTERAUCRYPTOVERIF');
     if(!checksum || !digest || checksum !== digest) {
         return next({error: 'Request body digest did not match verification.'});
     }
@@ -42,8 +42,29 @@ async function authenticationMiddleware(req:any, res:any, next:any) {
 }
 
 
+router.post('/getRedirectionAddress', authenticationMiddleware, async(req, res) => {
+    const server = req.get('XINTERAUCRYPTOSERV');
+    //Get coin from symbol
+    let coin = await database.getCurrenciesDatabase().getCoinFromServerID(server);
+    if(coin == null) {
+        console.log('Unable to determine SYMBOL [getRedirectionAddress]', req.body);
+        Sentry.addBreadcrumb({
+            category: 'getRedirectionAddress',
+            data: req.body,
+            level: Sentry.Severity.fatal
+          });
+        Sentry.captureException(new Error(`Unable to determine SYMBOL`));
+        res.status(400).send({status: 'Unable to determine SYMBOL.'});
+    } else {
+        let invoiceID = req.body.invoiceID;
+        let invoice = await database.getInvoicesDatabase().getInvoiceFromID(invoiceID);
+        let redirection = await invoice.getCompany().getCoinRedirectAddress(coin.getSymbol());
+        res.status(200).send({symbol: coin.getSymbol(), address: redirection});
+    }
+});
+
 router.post('/invoiceUpdate', authenticationMiddleware, async (req, res) => {
-    const server = req.get('X-INTER-AUCRYPTO-SERV');
+    const server = req.get('XINTERAUCRYPTOSERV');
     //Get coin from symbol
     let coin = await database.getCurrenciesDatabase().getCoinFromServerID(server);
     if(coin == null) {
@@ -68,7 +89,12 @@ router.post('/invoiceUpdate', authenticationMiddleware, async (req, res) => {
                             if(invoice.getTransactions().indexOf(req.body.data.transactionID) == -1) {
                                 let tx = invoice.getTransactions();
                                 tx.push(req.body.data.transactionID);
-                                invoice.setTransactions(tx)
+                                invoice.setTransactions(tx);
+                                if(eventType == 'CONFIRMED_DEPOSIT') {
+                                    let paymentTransactionsIDS = invoice.getPaymentTransactionIDs();
+                                    if(paymentTransactionsIDS.indexOf(req.body.data.paymentTransactionID) == -1) paymentTransactionsIDS.push(req.body.data.paymentTransactionID);
+                                    invoice.setPaymentTransactionIds(paymentTransactionsIDS);
+                                }
                                 let amountResult = await invoice.addAmount(coin.getSymbol(), req.body.data.amount, eventType, invoiceD[1]);
                                 Sentry.addBreadcrumb({
                                     category: 'invoiceUpdate',
@@ -78,10 +104,17 @@ router.post('/invoiceUpdate', authenticationMiddleware, async (req, res) => {
                                   });
                                 if(amountResult !== true) Sentry.captureException(new Error(amountResult));
                             } else {
-                                //Aready inserted, confirmation? 
-                                //If so, forward
-                                invoiceD[1].query('ROLLBACK');
-                                invoiceD[1].release();
+                                if(eventType == 'CONFIRMED_DEPOSIT') {
+                                    let paymentTransactionsIDS = invoice.getPaymentTransactionIDs();
+                                    if(paymentTransactionsIDS.indexOf(req.body.data.paymentTransactionID) == -1) paymentTransactionsIDS.push(req.body.data.paymentTransactionID);
+                                    invoice.setPaymentTransactionIds(paymentTransactionsIDS);
+                                    let amountResult = await invoice.addAmount(coin.getSymbol(), 0, eventType, invoiceD[1]);
+                                } else {
+                                    //Aready inserted, confirmation? 
+                                    //If so, forward
+                                    invoiceD[1].query('ROLLBACK');
+                                    invoiceD[1].release();
+                                }
                             }
                            
                         }else {

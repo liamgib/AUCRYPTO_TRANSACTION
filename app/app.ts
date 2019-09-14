@@ -2,6 +2,8 @@ const Sentry = require('@sentry/node');
 Sentry.init({ dsn: 'https://58c760d17c60405db13f92bbe1744a89@sentry.io/1497974' });
 import ExchangeCenter from './currency/exchangecenter';
 const ExCenter = new ExchangeCenter();
+ExCenter.calculateRates();
+ExCenter.startPriceHeartBeat();
 
 import database_handler from './postgres/database_handler';
 const database = new database_handler(ExCenter);

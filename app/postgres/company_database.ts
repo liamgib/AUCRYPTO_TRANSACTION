@@ -19,7 +19,19 @@ export default class company_database {
     public createCompanyTable = () => {
         var _this = this;
         return new Promise(function(resolve, reject) {
-            _this.pool.query(`CREATE TABLE public.company(uuid character(64) COLLATE pg_catalog."default" NOT NULL, name character varying(120) COLLATE pg_catalog."default", "redirectAddresses" jsonb, enabledcoins character varying(16)[] COLLATE pg_catalog."default", CONSTRAINT company_pkey PRIMARY KEY (uuid))`, (err:any, res:any) => {
+            _this.pool.query(`CREATE TABLE public.company
+            (
+                uuid character varying(64) COLLATE pg_catalog."default" NOT NULL,
+                name character varying(120) COLLATE pg_catalog."default",
+                redirectaddresses jsonb,
+                enabledcoins character varying(16)[] COLLATE pg_catalog."default",
+                apiclient character varying(120) COLLATE pg_catalog."default",
+                CONSTRAINT company_pkey PRIMARY KEY (uuid),
+                CONSTRAINT company_api FOREIGN KEY (apiclient)
+                    REFERENCES public.apikeys (api_client) MATCH SIMPLE
+                    ON UPDATE NO ACTION
+                    ON DELETE NO ACTION
+            )`, (err:any, res:any) => {
                 if (err){ console.log(err); return resolve(false); }
                 return true;
             });
@@ -54,7 +66,7 @@ export default class company_database {
             try  {
                 await _this.pool.query("select * from company where uuid=$1", [companyId], (err:any, res:any) => {
                     if(res.rowCount == 0) return resolve(null);
-                    let comp = new Company(res.rows[0].name, res.rows[0].redirectAddresses);
+                    let comp = new Company(res.rows[0].name, res.rows[0].redirectaddresses);
                     comp.setUUID(res.rows[0].uuid);
                     comp.setAPIClient(res.rows[0].apiclient);
                     return resolve(comp);

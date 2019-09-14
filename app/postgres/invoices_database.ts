@@ -4,6 +4,7 @@ import companyDatabase from '../postgres/company_database';
 import Coin from '../currency/coin';
 import currenciesDatabase from './currencies_database';
 import ExchangeCenter from '../currency/exchangecenter';
+import Company from '../modules/company';
 
 export default class server_database {
 
@@ -41,9 +42,10 @@ export default class server_database {
                 depositaddresses jsonb,
                 remainingamountcoins jsonb,
                 totalamountcoins jsonb,
-                acceptedminimumdeposit character varying(10) COLLATE pg_catalog."default",
+                acceptedminimumdeposit character varying(11) COLLATE pg_catalog."default",
                 lastpaidtime timestamp with time zone,
                 createdtime timestamp with time zone,
+                paymenttransactions character varying(100)[] COLLATE pg_catalog."default",
                 CONSTRAINT invoices_pkey PRIMARY KEY (id),
                 CONSTRAINT invoices_company_fkey FOREIGN KEY (company)
                     REFERENCES public.company (uuid) MATCH SIMPLE
@@ -65,7 +67,7 @@ export default class server_database {
         return new Promise(async function(resolve, reject) {
             if(invoice.getDepositAddresses() == {} || invoice.getDepositAddresses() == undefined) return resolve(false);
             try  {
-                await _this.pool.query("INSERT INTO invoices(id, company, amountaud, convertedtime, createdtime, acceptedcoins, depositaddresses, amountpaidaud, remainingamountcoins, totalamountcoins, transactions, status, acceptedminimumdeposit, lastpaidtime) VALUES($1, $2, $3, $4, now(), $5, $6, $7, $8, $9, $10, $11, $12, now())", [invoice.getInvoiceID(), invoice.getCompany().getUUID(), invoice.getAmountAUD(), invoice.getConvertedTime(), invoice.getAcceptedCoinsString(), invoice.getDepositAddresses(), 0, invoice.getRemainingAmountCoins(), invoice.getRemainingAmountCoins(), [], invoice.getStatus(), invoice.getAcceptedMinimumDeposit()]);
+                await _this.pool.query("INSERT INTO invoices(id, company, amountaud, convertedtime, createdtime, acceptedcoins, depositaddresses, amountpaidaud, remainingamountcoins, totalamountcoins, transactions, status, acceptedminimumdeposit, lastpaidtime, paymenttransactions) VALUES($1, $2, $3, $4, now(), $5, $6, $7, $8, $9, $10, $11, $12, now(), $13)", [invoice.getInvoiceID(), invoice.getCompany().getUUID(), invoice.getAmountAUD(), invoice.getConvertedTime(), invoice.getAcceptedCoinsString(), invoice.getDepositAddresses(), 0, invoice.getRemainingAmountCoins(), invoice.getRemainingAmountCoins(), [], invoice.getStatus(), invoice.getAcceptedMinimumDeposit(), []]);
                 return resolve(true);
             } catch (e) {
                 console.log(e);
@@ -100,6 +102,7 @@ export default class server_database {
                             invoice.setTransactions(res.rows[0].transactions);
                             invoice.setInvoiceID(res.rows[0].id);
                             invoice.setLastPaidTime(res.rows[0].lastpaidtime);
+                            invoice.setPaymentTransactionIds(res.rows[0].paymenttransactions);
                             return resolve(invoice);
                         }
                     }
@@ -141,6 +144,7 @@ export default class server_database {
                             invoice.setTransactions(res.rows[0].transactions);
                             invoice.setInvoiceID(res.rows[0].id);
                             invoice.setLastPaidTime(res.rows[0].lastpaidtime);
+                            invoice.setPaymentTransactionIds(res.rows[0].paymenttransactions);
                             return resolve([invoice, client]);
                         }
                     }
@@ -166,8 +170,8 @@ export default class server_database {
             if(poolClient !== undefined) client = poolClient;
             if(poolClient == undefined) await _this.pool.connect();
             try {
-                if(!isPassed) await poolClient.query('BEGIN')
-                await client.query("UPDATE invoices SET amountpaidaud=$1, status=$2, remainingamountcoins=$3, transactions=$4, lastpaidtime=$5 where id=$6", [invoice.getAmountPaidAUD(), invoice.getStatus(), invoice.getRemainingAmountCoins(), invoice.getTransactions(), invoice.getLastPaidTime(), invoice.getInvoiceID()]);
+                if(!isPassed) await poolClient.query('BEGIN');
+                await client.query("UPDATE invoices SET amountpaidaud=$1, status=$2, remainingamountcoins=$3, transactions=$4, lastpaidtime=$5, paymenttransactions=$6 where id=$7", [invoice.getAmountPaidAUD(), invoice.getStatus(), invoice.getRemainingAmountCoins(), invoice.getTransactions(), invoice.getLastPaidTime(), invoice.getPaymentTransactionIDs(), invoice.getInvoiceID()]);
                 await client.query('COMMIT');
                 return resolve(true);
             } catch (e) {
@@ -176,6 +180,41 @@ export default class server_database {
                 return resolve(false);
             } finally {
                 if(poolClient == undefined) client.release();
+            }
+        });
+    }
+
+
+    public getCompanyInvoices(comp:Company){
+        var _this = this;
+        return new Promise(async function(resolve, reject) {
+            try {
+                let { rows } = await _this.pool.query('SELECT id, status, amountaud, amountpaidaud, acceptedminimumdeposit, createdtime, lastpaidtime, depositaddresses, remainingamountcoins from invoices where company = $1 order by createdtime desc', [comp.getUUID()]);
+                if (rows[0] === undefined || rows.length === 0 || rows === null) {
+                    return resolve(false);
+                } else {
+                    return resolve(rows);
+                }
+            } catch(e) {
+                console.log(e);
+                return resolve(false);
+            }
+        });
+    }
+
+    public getCompanyInvoice(comp:Company, invoiceID:string) {
+        var _this = this;
+        return new Promise(async function(resolve, reject) {
+            try {
+                let { rows } = await _this.pool.query('SELECT id, status, amountaud, amountpaidaud, acceptedminimumdeposit, createdtime, lastpaidtime, transactions, depositaddresses, remainingamountcoins, paymenttransactions from invoices where company = $1 and id = $2 order by createdtime desc', [comp.getUUID(), invoiceID]);
+                if (rows[0] === undefined || rows.length === 0 || rows === null) {
+                    return resolve({error: "Unable to locate invoice ID", code: "INVALID-INVOICE"});
+                } else {
+                    return resolve(rows);
+                }
+            } catch(e) {
+                console.log(e);
+                return resolve({error: "Unable to locate invoice ID", code: "INVALID-INVOICE"});
             }
         });
     }

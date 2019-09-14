@@ -20,7 +20,22 @@ export default class server_database {
     public createServerTable = () => {
         var _this = this;
         return new Promise(function(resolve, reject) {
-            _this.pool.query("CREATE TABLE servers(id serial PRIMARY KEY, server_id VARCHAR (355) UNIQUE NOT NULL, session VARCHAR(45) , key VARCHAR (60) NOT NULL, mac VARCHAR(45), banned VARCHAR(20) DEFAULT 'N', created_on TIMESTAMP NOT NULL, last_login TIMESTAMP NOT NULL);", (err:any, res:any) => {
+            _this.pool.query(`CREATE TABLE public.servers
+            (
+                id integer NOT NULL DEFAULT nextval('servers_id_seq'::regclass) ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
+                server_id character varying(355) COLLATE pg_catalog."default" NOT NULL,
+                session character varying(45) COLLATE pg_catalog."default",
+                key character varying(60) COLLATE pg_catalog."default" NOT NULL,
+                mac character varying(45) COLLATE pg_catalog."default",
+                banned character varying(20) COLLATE pg_catalog."default" DEFAULT 'N'::character varying,
+                created_on timestamp without time zone NOT NULL,
+                last_login timestamp without time zone NOT NULL,
+                host character varying(200) COLLATE pg_catalog."default",
+                type character varying(32) COLLATE pg_catalog."default",
+                CONSTRAINT servers_pkey PRIMARY KEY (id),
+                CONSTRAINT servers_server_id_key UNIQUE (server_id)
+            
+            )`, (err:any, res:any) => {
                 if (err) return resolve(false);
                 return true;
             });

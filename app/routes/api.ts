@@ -26,20 +26,28 @@ router.post('/login', (req, res) => {
 });
 
 async function authenticationMiddleware(req:any, res:any, next:any) {
-    const server = req.get('X-INTER-AUCRYPTO-SERV');
+    const server = req.get('XINTERAUCRYPTOSERV');
+    if(!server) console.log(JSON.stringify(req.headers));
+    if(!server) console.log('Unable to identify server.');
     if(!server) return next({error: 'Unable to identify server.'});
+    
     let servInstance = await database.getServerDatabase().getServer(server);
+    if(servInstance == '') console.log('Unable to identify server.');
     if(servInstance == '') return next({error: 'Unable to identify server.'});
+    
     const payload = JSON.stringify(req.body);
     if(!payload){
         return next('Request body empty');
     }
 
-    const hmac = crypto.createHmac('sha1', servInstance[0]);
-    const digest = 'sha1=' + hmac.update(payload).digest('hex');
-    const checksum = req.get('X-INTER-AUCRYPTO-VERIF');
-    if(!checksum || !digest || checksum !== digest) {
-        return next({error: 'Request body digest did not match verification.'});
+    if(req.method != 'GET') {
+        const hmac = crypto.createHmac('sha1', servInstance[0]);
+        const digest = 'sha1=' + hmac.update(payload).digest('hex');
+        const checksum = req.get('XINTERAUCRYPTOVERIF');
+        if(!checksum || !digest || checksum !== digest) {
+            console.log('Checksum did not match');
+            return next({error: 'Request body digest did not match verification.'});
+        }
     }
     return next();
 }
@@ -52,7 +60,7 @@ router.post('/invoice', authenticationMiddleware, async (req, res) => {
     if(acceptedMinimumDeposit !== 'MEMPOOL' && acceptedMinimumDeposit !== 'UNCONFIRMED' && acceptedMinimumDeposit !== 'CONFIRMED') return res.status(403).json({error: 'Invalid acceptedMinimumDeposit'});
    
     let coins = await database.getCurrenciesDatabase().getCoins();
-    let comp = await database.getCompanyDatabase().getCompanyWithAPIClient(req.get('X-INTER-API-CLIENT'));
+    let comp = await database.getCompanyDatabase().getCompanyWithAPIClient(req.get('XINTERAPICLIENT'));
     if(!comp) {
         return res.status(400).json({status: 'Error', code: 'AT-IC1', message: 'Error with API Client, refer to support.'});
     } else {
@@ -69,7 +77,21 @@ router.post('/invoice', authenticationMiddleware, async (req, res) => {
     }
 });
 
+router.get('/invoice', authenticationMiddleware, async (req, res) => {
+    let comp = await database.getCompanyDatabase().getCompanyWithAPIClient(req.get('XINTERAPICLIENT'));
+    let invoices = await database.getInvoicesDatabase().getCompanyInvoices(comp);
+    res.status(200).json(invoices);
+});
+
+router.get('/invoice/:invoiceID', authenticationMiddleware, async (req, res) => {
+    let invoiceID = req.params.invoiceID;
+    let comp = await database.getCompanyDatabase().getCompanyWithAPIClient(req.get('XINTERAPICLIENT'));
+    let invoices = await database.getInvoicesDatabase().getCompanyInvoice(comp, invoiceID);
+    res.status(200).json(invoices);
+});
+
 router.use((err:any, req:any, res:any, next:any) => {
+    console.log(err);
     var ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
     Sentry.captureException(new Error('Authentication Failure - ' + ip));
     return res.status(403).json({loggedIn: false, error: 'Missing authentication headers or verification failed'});
